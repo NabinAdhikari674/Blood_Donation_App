@@ -1,0 +1,10 @@
+{
+    "A+" : ["A Positive",   "A RhD Positive (A+)",    "A+, A-, O+, O-"],
+    "A-" : ["A Negative",   "A RhD Negative (A-)",    "A-, O-"],
+    "B+" : ["B Positive",   "B RhD Positive (B+)",    "B+, B-, O+, O-"],
+    "B-" : ["B Negative",   "B RhD Negative (B-)",    "B-, O-"],
+    "AB+": ["AB Positive",  "AB RhD Positive (AB+)",  "A+, A-, B+, B-, O+, O-, AB+, AB-"],
+    "AB-": ["AB Negative",  "AB RhD Negative (AB-)",  "AB-, A-, B-, O-"],
+    "O+" : ["O Positive",   "O RhD Positive (O+)",    "O+, O-"],
+    "O-" : ["O Negative",   "O RhD Negative (O-)",    "O-"]
+}
