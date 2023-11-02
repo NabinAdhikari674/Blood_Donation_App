@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'blood_donation_api.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": "blood_donation_db.sqlite3",
+        "NAME": os.path.join(BASE_DIR, 'blood_donation_db.sqlite3'),
     }
 }
 
