@@ -1,2 +1,5 @@
 firebase_config.json
 blood_donation_api/assets/firebase_config_service_account.json
+__pycache__/
+migrations/
+blood_donation_api/blood_donation_db.sqlite3
