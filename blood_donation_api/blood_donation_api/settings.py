@@ -14,7 +14,7 @@ SECRET_KEY = 'django-insecure-2=fsl0kmtc+&o6&oc6hems6xzh=ihv8io+pr0hdo+rjy=qzds&
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', '10.0.2.2']
+ALLOWED_HOSTS = ['127.0.0.1', '10.0.2.2', 'leonardo674.pythonanywhere.com']
 
 # Firebase configuration
 FIREBASE_CONFIG = json.load(open(os.path.join(BASE_DIR, 'assets/firebase_config.json')))
