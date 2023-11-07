@@ -145,7 +145,7 @@ def user_register(request):
                     email_verified = False,
                     phone_number = form.cleaned_data.get('phone'),
                     password = form.cleaned_data.get('password'),
-                    display_name = form.cleaned_data.get('username'),
+                    display_name = form.cleaned_data.get('display_name'),
                     disabled = False
                 )
                 messages.success(request, f"User \'{new_user.uid}\' created successfully")

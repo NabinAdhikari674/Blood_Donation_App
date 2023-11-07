@@ -64,6 +64,13 @@ class form_register(forms.Form):
         widget=forms.RadioSelect(attrs={'title':'Gender'}),
         choices=choice_gender
     )
+    display_name = forms.CharField(
+        label='Display Name', 
+        required=False, 
+        max_length=100,
+        help_text='Your Display Name',
+        widget=forms.TextInput(attrs={'placeholder':'Display Name'})
+    )
     first_name = forms.CharField(
         label='First Name', 
         required=False, 
