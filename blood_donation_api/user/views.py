@@ -9,7 +9,7 @@ from django.http import JsonResponse as JSONResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import form_register, form_login, form_address, form_blood_group
+from .forms import form_register, form_login, form_address, form_blood_group, form_update
 from .models import blood_group, address, user_verification
 from .models import user as user_model
 
@@ -72,7 +72,6 @@ def getuser(request, username, mode='get'):
         else:
             return [False, identifier]
 
-@csrf_exempt
 def user_login(request):
     if request.method == "POST":
         form = form_login(request.POST)
@@ -94,12 +93,14 @@ def user_login(request):
                     if(user_record['idToken'] is None or (user_record['registered'] == False)):
                         raise Exception('User not authenticated or properly registered')
 
+                    user_details = user_get_detail(user.uid)
                     data = {
                         "idToken": user_record['idToken'],
                         "refreshToken": user_record['refreshToken'],
                         "expiresIn": user_record['expiresIn'],
                         "username": username,
-                        "user": user_record_to_json(user)
+                        "user": user_record_to_json(user),
+                        "user_details": user_details
                     }
 
                     user_local, created = user_model.objects.get_or_create(username=username, password=password)
@@ -109,6 +110,7 @@ def user_login(request):
                     messages.success(request, f"You are logged in as: {username}")
                     return JSONResponse({"status":True, "messages": messages_as_json(request), "data": data}, status=200)   
                 except Exception as e:
+                    print(e)
                     # TODO: Check if we get a { "error" : "Permission denied." } and handle automatically
                     # TODO: Check if we get a { "error" : "Authenticate Error" } and handle
                     messages.error(request, "Invalid username or password. Authentication Error.")
@@ -129,7 +131,6 @@ def user_logout(request):
     messages.info(request, f"You are logged out")
     return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=200)
 
-
 def user_register(request):
     if request.method == "POST":
         form = form_register(request.POST)
@@ -143,7 +144,7 @@ def user_register(request):
                     uid = form.cleaned_data.get('username'),
                     email = form.cleaned_data.get('email'),
                     email_verified = False,
-                    phone_number = form.cleaned_data.get('phone'),
+                    phone_number = form.cleaned_data.get('phone_number'),
                     password = form.cleaned_data.get('password'),
                     display_name = form.cleaned_data.get('display_name'),
                     disabled = False
@@ -159,12 +160,72 @@ def user_register(request):
         return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=405)
 
 # @login_required
+def user_update(request):
+    if request.method == "POST":
+        form = form_update(request.POST)
+        if form.is_valid():
+            user = auth.update_user(
+                form.cleaned_data.get('username'),
+                email = form.cleaned_data.get('email'),
+                phone_number = form.cleaned_data.get('phone_number')
+                # email_verified = True,
+                # password = form.cleaned_data.get('username'),
+                # display_name = form.cleaned_data.get('display_name'),
+                # photo_url = None,
+                # disabled = True
+            )
 
+            details = {
+                "first_name": form.cleaned_data.get('first_name'),
+                "last_name": form.cleaned_data.get('last_name'),
+                "blood_group_name": form.cleaned_data.get('blood_group_name'),
+                "country": form.cleaned_data.get('country'),
+                "state": form.cleaned_data.get('state'),
+                "city": form.cleaned_data.get('city'),
+                "area": form.cleaned_data.get('area')
+            }
+            user_put_detail(form.cleaned_data.get('username'), details)
 
-def getaddress(request):
+            data = {
+                "user": user_record_to_json(user),
+                "user_details": details
+            }
+
+            messages.success(request, "Sucessfully updated user: {0}".format(user.uid))
+            return JSONResponse({"status":True, "messages": messages_as_json(request), "data": data}, status=200) 
+        else:
+            form_errors_as_json(form)
+            messages.error(request, f"Invalid input")
+            return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": form_errors_as_json(form)}, status=400)
+    else:
+        messages.error(request, f"Invalid request")
+        return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=405)
+
+def user_put_detail(username, details):
+    try:
+        doc_ref = db.collection("user_detail").document(username)
+        doc_ref.set({
+            "first_name": details['first_name'],
+            "last_name": details['last_name'],
+            "blood_group_name": details['blood_group_name'],
+            "country": details['country'],
+            "state": details['state'],
+            "city": details['city'],
+            "area": details['area']
+        })
+    except e as Exception:
+        return False
+    return True 
     
+def user_get_detail(username):
+    users_ref = db.collection("user_detail").document(username)
+    doc = users_ref.get()
+    if doc.exists:
+        data = doc.to_dict()
+        return data
+    return {}
 
-            
+def getaddress(request):     
     return JSONResponse({"status":True}, status=200)
 
 def putaddress(request):
@@ -175,17 +236,6 @@ def putaddress(request):
                 doc_ref = db.collection("address").document("Nepal").collection((state['name']).title()).document(district['name']).collection(municipality['name']).document("Cities")
                 doc_ref.set({"City": "Test 1"})
     return JSONResponse({"status":True}, status=200)
-
-def putuseraddress(request):
-    if(request.method == "POST"):
-        form = form_address(response.POST)
-        if form.is_valid():
-            blood_data = form.save()
-            messages.info(request, f"New address registered")
-            return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=200)
-        else:
-            messages.error(request, f"Invalid data")
-            return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=400)
 
 def getbloodgroup(request):
     users_ref = db.collection("blood_group")
