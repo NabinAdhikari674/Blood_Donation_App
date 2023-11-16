@@ -165,35 +165,45 @@ def user_update(request):
     if request.method == "POST":
         form = form_update(request.POST)
         if form.is_valid():
-            user = auth.update_user(
-                form.cleaned_data.get('username'),
-                email = form.cleaned_data.get('email'),
-                phone_number = form.cleaned_data.get('phone_number')
-                # email_verified = True,
-                # password = form.cleaned_data.get('username'),
-                # display_name = form.cleaned_data.get('display_name'),
-                # photo_url = None,
-                # disabled = True
-            )
+            try:
+                user = auth.update_user(
+                    form.cleaned_data.get('username'),
+                    email = form.cleaned_data.get('email'),
+                    phone_number = form.cleaned_data.get('phone_number')
+                    # email_verified = True,
+                    # password = form.cleaned_data.get('username'),
+                    # display_name = form.cleaned_data.get('display_name'),
+                    # photo_url = None,
+                    # disabled = True
+                )
 
-            details = {
-                "first_name": form.cleaned_data.get('first_name'),
-                "last_name": form.cleaned_data.get('last_name'),
-                "blood_group_name": form.cleaned_data.get('blood_group_name'),
-                "country": form.cleaned_data.get('country'),
-                "state": form.cleaned_data.get('state'),
-                "city": form.cleaned_data.get('city'),
-                "area": form.cleaned_data.get('area')
-            }
-            user_put_detail(form.cleaned_data.get('username'), details)
+                details = {
+                    "first_name": form.cleaned_data.get('first_name'),
+                    "last_name": form.cleaned_data.get('last_name'),
+                    "blood_group_name": form.cleaned_data.get('blood_group_name'),
+                    "country": form.cleaned_data.get('country'),
+                    "state": form.cleaned_data.get('state'),
+                    "city": form.cleaned_data.get('city'),
+                    "area": form.cleaned_data.get('area')
+                }
+                user_put_detail(form.cleaned_data.get('username'), details)
 
-            data = {
-                "user": user_record_to_json(user),
-                "user_details": details
-            }
+                data = {
+                    "user": user_record_to_json(user),
+                    "user_details": details
+                }
 
-            messages.success(request, "Sucessfully updated user: {0}".format(user.uid))
-            return JSONResponse({"status":True, "messages": messages_as_json(request), "data": data}, status=200) 
+                messages.success(request, "Sucessfully updated user: {0}".format(user.uid))
+                return JSONResponse({"status":True, "messages": messages_as_json(request), "data": data}, status=200) 
+            except Exception as e:
+                if(e.__class__.__name__ == 'PhoneNumberAlreadyExistsError'):
+                    messages.error(request, f"A user with that phone number already exists. Try again with another number!")
+                    return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=400)
+                else:
+                    messages.error(request, f"Error while updating user")
+                    return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=400)
+                    
+
         else:
             form_errors_as_json(form)
             messages.error(request, f"Invalid input")
