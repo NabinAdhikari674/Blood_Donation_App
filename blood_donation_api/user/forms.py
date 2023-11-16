@@ -214,4 +214,45 @@ class form_update(forms.Form):
         max_length=20,
         required=True
     )
-    
+
+class form_addItem(forms.Form):
+    username = forms.CharField(
+        label='Username',
+        max_length=20,
+        required=True
+    )
+    name = forms.CharField(
+        label='Item name',
+        max_length=20,
+        required=True
+    )
+    price = forms.CharField(
+        label='Price',
+        max_length=20,
+        required=True
+    )
+    quantity = forms.IntegerField(
+        label='Quantity',
+        required=False
+    )
+    expiry_date = forms.CharField(
+        label='Expiry Date',
+        required=False
+    )
+    purchase_date = forms.CharField(
+        label='Purchase Date',
+        max_length=20,
+        required=False
+    )
+    description = forms.CharField(
+        label='Description',
+        max_length=2000,
+        required=False
+    )
+
+class form_getItems(forms.Form):
+    username = forms.CharField(
+        label='Username',
+        max_length=20,
+        required=True
+    )

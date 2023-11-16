@@ -1,5 +1,6 @@
 import json
 import requests
+import datetime
 
 from django.contrib import messages
 from django.contrib.auth import authenticate 
@@ -9,12 +10,12 @@ from django.http import JsonResponse as JSONResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
-from .forms import form_register, form_login, form_address, form_blood_group, form_update
+from .forms import *
 from .models import blood_group, address, user_verification
 from .models import user as user_model
 
-from blood_donation_api import utilities
-from blood_donation_api.utilities import messages_as_json, form_errors_as_json, user_record_to_json
+from blood_donation_api.utilities import *
+# from blood_donation_api.utilities import messages_as_json, form_errors_as_json, user_record_to_json
 from blood_donation_api.settings import FIREBASE_CONFIG
 
 from firebase_admin import auth, firestore
@@ -213,7 +214,8 @@ def user_put_detail(username, details):
             "city": details['city'],
             "area": details['area']
         })
-    except e as Exception:
+    except Exception as e:
+        print(e)
         return False
     return True 
     
@@ -269,3 +271,52 @@ def putbloodgroup(request):
     except:
         messages.error(request, f"Internal Server Error")
         return JSONResponse({"status":False,"messages": messages_as_json(request)}, status=500)
+
+def item_add(request):
+    if request.method == "POST":
+        form = form_addItem(request.POST)
+        if form.is_valid():
+            try:
+                doc_ref = db.collection("items").document(form.cleaned_data.get('username')).collection('items').document(form.cleaned_data.get('name'))
+                doc_ref.set({
+                    "name": form.cleaned_data.get('name'),
+                    "price": form.cleaned_data.get('price'),
+                    "quantity": form.cleaned_data.get('quantity'),
+                    "expiry_date": form.cleaned_data.get('expiry_date'),
+                    "purchase_date": datetime.datetime.now().strftime('%Y-%m-%d'),
+                    "description": form.cleaned_data.get('description'),
+                })
+                
+                messages.error(request, "Successfully added item")
+                return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=201)   
+            except Exception as e:
+                messages.error(request, "Error while adding item")
+                return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": str(e)}, status=401)   
+        else:
+            form_errors_as_json(form)
+            messages.error(request, f"Invalid input")
+            return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": form_errors_as_json(form)}, status=400)
+    else:
+        messages.error(request, f"Invalid request")
+        return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=405)
+
+def item_get_all(request):
+    users_ref = db.collection("items")
+    docs = users_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    messages.success(request, f"Successfully retrieved all items")
+    return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
+
+def item_get(request):
+    username = request.headers.get('username')
+    print(username)
+    users_ref = db.collection("items").document(username).collection('items')
+    docs = users_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    messages.success(request, f"Successfully retrieved items data")
+    return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
+   
