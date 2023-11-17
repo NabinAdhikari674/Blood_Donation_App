@@ -301,7 +301,7 @@ def item_add(request):
                     "price": form.cleaned_data.get('price'),
                     "quantity": form.cleaned_data.get('quantity'),
                     "expiry_date": form.cleaned_data.get('expiry_date'),
-                    "purchase_date": datetime.datetime.now().strftime('%Y-%m-%d'),
+                    "purchase_date": form.cleaned_data.get('purchase_date'), #datetime.datetime.now().strftime('%Y-%m-%d'),
                     "description": form.cleaned_data.get('description'),
                 })
                 
@@ -354,7 +354,7 @@ def item_sell(request):
                     "name": form.cleaned_data.get('name'),
                     "price": form.cleaned_data.get('price'),
                     "quantity": form.cleaned_data.get('quantity'),
-                    'sales_date': datetime.datetime.now().strftime('%Y-%m-%d'),
+                    'sales_date': form.cleaned_data.get('sales_date'), #datetime.datetime.now().strftime('%Y-%m-%d'),
                     "expiry_date": form.cleaned_data.get('expiry_date'),
                     "purchase_date": form.cleaned_data.get('purchase_date'),
                     "description": form.cleaned_data.get('description'),
@@ -382,3 +382,42 @@ def item_get_sales(request):
         data[doc.id] = doc.to_dict()
     messages.success(request, f"Successfully retrieved sales items data")
     return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
+
+def item_get_expiry(request):
+    username = request.headers.get('username')
+    today = datetime.datetime.strptime(request.headers.get('today'), '%Y-%m-%d').date()
+    users_ref = db.collection("items").document(username).collection('items')
+    docs = users_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    data_expiry = {}
+    for item in data:
+        expiry_date = datetime.datetime.strptime(data[item]['expiry_date'], '%Y-%m-%d').date()
+        days_difference = (expiry_date - today).days
+        if(days_difference < 15):
+            data_expiry[item] = data[item]
+    messages.success(request, f"Successfully retrieved sales items data")
+    return JSONResponse({"status":True, "data": data_expiry, "messages": messages_as_json(request)}, status=200)
+
+def get_notifications(request):
+    username = request.headers.get('username')
+    today = datetime.datetime.strptime(request.headers.get('today'), '%Y-%m-%d').date()
+    users_ref = db.collection("items").document(username).collection('items')
+    docs = users_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    notifications = {}
+    for item in data:
+        expiry_date = datetime.datetime.strptime(data[item]['expiry_date'], '%Y-%m-%d').date()
+        days_difference = (expiry_date - today).days
+        if(days_difference < 15):
+            notifications[item] = f'Your item \'{item}\' is going to expire soon at ' + str(data[item]['expiry_date']) + f' ({days_difference} days remaining)'
+        if(days_difference == 0):
+            notifications[item] = f'Your item \'{item}\' is expiring today which was bought on ' + str(data[item]['purchase_date'])
+        if(days_difference < 0):
+            notifications[item] = f'Your item \'{item}\' has expired at ' + str(data[item]['expiry_date']) + '. It was purchased on ' + str(data[item]['purchase_date']) 
+    
+    messages.success(request, f"Successfully retrieved sales items data")
+    return JSONResponse({"status":True, "data": notifications, "messages": messages_as_json(request)}, status=200)

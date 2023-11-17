@@ -295,3 +295,8 @@ class form_sellItem(forms.Form):
         max_length=2000,
         required=False
     )
+    sales_date = forms.CharField(
+        label='Purchase Date',
+        max_length=20,
+        required=True
+    )
