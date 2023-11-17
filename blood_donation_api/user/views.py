@@ -141,17 +141,25 @@ def user_register(request):
                 messages.error(request, f"A User with that {user_exists[1]} already exists")
                 return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=403)
             else:
-                new_user = auth.create_user(
-                    uid = form.cleaned_data.get('username'),
-                    email = form.cleaned_data.get('email'),
-                    email_verified = False,
-                    phone_number = form.cleaned_data.get('phone_number'),
-                    password = form.cleaned_data.get('password'),
-                    display_name = form.cleaned_data.get('display_name'),
-                    disabled = False
-                )
-                messages.success(request, f"User \'{new_user.uid}\' created successfully")
-                return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=201)
+                try:
+                    new_user = auth.create_user(
+                        uid = form.cleaned_data.get('username'),
+                        email = form.cleaned_data.get('email'),
+                        email_verified = False,
+                        phone_number = form.cleaned_data.get('phone_number'),
+                        password = form.cleaned_data.get('password'),
+                        display_name = form.cleaned_data.get('display_name'),
+                        disabled = False
+                    )
+                    messages.success(request, f"User \'{new_user.uid}\' created successfully")
+                    return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=201)
+                except Exception as e:
+                    if (str(e) == 'Error while calling Auth service (INVALID_PHONE_NUMBER ). TOO_SHORT'):
+                        messages.error(request, f"Phone number is invalid (Too Short). Phone number must be of 10-12 digits after country code!")
+                        return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=400) 
+                    else:
+                        messages.error(request, f"Error while registering user. Invalid input !")
+                        return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": str(e)}, status=400)
         else:
             form_errors_as_json(form)
             messages.error(request, f"Invalid input")
@@ -201,7 +209,7 @@ def user_update(request):
                     return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=400)
                 else:
                     messages.error(request, f"Error while updating user")
-                    return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=400)
+                    return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": str(e)}, status=400)
                     
 
         else:
