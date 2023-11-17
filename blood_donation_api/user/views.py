@@ -329,13 +329,12 @@ def item_get_all(request):
 
 def item_get(request):
     username = request.headers.get('username')
-    print(username)
     users_ref = db.collection("items").document(username).collection('items')
     docs = users_ref.stream()
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
-    messages.success(request, f"Successfully retrieved items data")
+    messages.success(request, f"Successfully retrieved stock items data")
     return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
 
 def item_sell(request):
@@ -344,8 +343,7 @@ def item_sell(request):
         if form.is_valid():
             try:
                 if (form.cleaned_data.get('available_quantity') ==  form.cleaned_data.get('quantity')):
-                    delete_ref = db.collection("items").document(form.cleaned_data.get('username')).collection('items').document(form.cleaned_data.get('name')).delete()
-                    print(delete_ref)
+                    db.collection("items").document(form.cleaned_data.get('username')).collection('items').document(form.cleaned_data.get('name')).delete()
                 else:
                     remaining_quantity = int(form.cleaned_data.get('available_quantity')) - int(form.cleaned_data.get('quantity'))
                     update_ref = db.collection("items").document(form.cleaned_data.get('username')).collection('items').document(form.cleaned_data.get('name'))
@@ -363,7 +361,7 @@ def item_sell(request):
                 })
 
                 messages.error(request, "Successfully sold the item")
-                return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=201)   
+                return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=200)   
             except Exception as e:
                 messages.error(request, "Error while selling item")
                 return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": str(e)}, status=401)   
@@ -375,4 +373,12 @@ def item_sell(request):
         messages.error(request, f"Invalid request")
         return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=405)
 
-
+def item_get_sales(request):
+    username = request.headers.get('username')
+    users_ref = db.collection("sales").document(username).collection('sales')
+    docs = users_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    messages.success(request, f"Successfully retrieved sales items data")
+    return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
