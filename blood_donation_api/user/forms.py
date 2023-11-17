@@ -263,6 +263,11 @@ class form_sellItem(forms.Form):
         max_length=20,
         required=True
     )
+    id = forms.CharField(
+        label='Item name',
+        max_length=50,
+        required=True
+    )
     name = forms.CharField(
         label='Item name',
         max_length=20,

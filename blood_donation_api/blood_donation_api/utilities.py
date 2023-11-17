@@ -2,6 +2,10 @@ import os
 import json
 from django.contrib import messages
 from collections import defaultdict
+import random
+import string
+from datetime import datetime
+
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -45,3 +49,9 @@ def user_record_to_json(user_record):
     }
     return user_data
 
+def generate_unique_identifier(length = 8):
+    characters = string.ascii_letters + string.digits
+    current_time_seed = int(datetime.now().timestamp())
+    random.seed(current_time_seed)
+    identifier = ''.join(random.choice(characters) for _ in range(length))
+    return identifier
