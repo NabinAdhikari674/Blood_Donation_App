@@ -337,4 +337,42 @@ def item_get(request):
         data[doc.id] = doc.to_dict()
     messages.success(request, f"Successfully retrieved items data")
     return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
-   
+
+def item_sell(request):
+    if request.method == "POST":
+        form = form_sellItem(request.POST)
+        if form.is_valid():
+            try:
+                if (form.cleaned_data.get('available_quantity') ==  form.cleaned_data.get('quantity')):
+                    delete_ref = db.collection("items").document(form.cleaned_data.get('username')).collection('items').document(form.cleaned_data.get('name')).delete()
+                    print(delete_ref)
+                else:
+                    remaining_quantity = int(form.cleaned_data.get('available_quantity')) - int(form.cleaned_data.get('quantity'))
+                    update_ref = db.collection("items").document(form.cleaned_data.get('username')).collection('items').document(form.cleaned_data.get('name'))
+                    update_ref.update({"quantity": remaining_quantity})
+
+                doc_ref = db.collection("sales").document(form.cleaned_data.get('username')).collection('sales').document(form.cleaned_data.get('name'))
+                doc_ref.set({
+                    "name": form.cleaned_data.get('name'),
+                    "price": form.cleaned_data.get('price'),
+                    "quantity": form.cleaned_data.get('quantity'),
+                    'sales_date': datetime.datetime.now().strftime('%Y-%m-%d'),
+                    "expiry_date": form.cleaned_data.get('expiry_date'),
+                    "purchase_date": form.cleaned_data.get('purchase_date'),
+                    "description": form.cleaned_data.get('description'),
+                })
+
+                messages.error(request, "Successfully sold the item")
+                return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=201)   
+            except Exception as e:
+                messages.error(request, "Error while selling item")
+                return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": str(e)}, status=401)   
+        else:
+            form_errors_as_json(form)
+            messages.error(request, f"Invalid input")
+            return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": form_errors_as_json(form)}, status=400)
+    else:
+        messages.error(request, f"Invalid request")
+        return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=405)
+
+

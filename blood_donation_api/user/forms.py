@@ -256,3 +256,42 @@ class form_getItems(forms.Form):
         max_length=20,
         required=True
     )
+
+class form_sellItem(forms.Form):
+    username = forms.CharField(
+        label='Username',
+        max_length=20,
+        required=True
+    )
+    name = forms.CharField(
+        label='Item name',
+        max_length=20,
+        required=True
+    )
+    price = forms.CharField(
+        label='Price',
+        max_length=20,
+        required=True
+    )
+    available_quantity = forms.IntegerField(
+        label='Quantity',
+        required=True
+    )
+    quantity = forms.IntegerField(
+        label='Quantity',
+        required=True
+    )
+    expiry_date = forms.CharField(
+        label='Expiry Date',
+        required=False
+    )
+    purchase_date = forms.CharField(
+        label='Purchase Date',
+        max_length=20,
+        required=False
+    )
+    description = forms.CharField(
+        label='Description',
+        max_length=2000,
+        required=False
+    )
