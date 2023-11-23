@@ -305,3 +305,52 @@ class form_sellItem(forms.Form):
         max_length=20,
         required=True
     )
+
+class form_post(forms.Form):
+    username = forms.CharField(
+        label='Username',
+        max_length=20,
+        required=True
+    )
+    create_ts = forms.CharField(
+        label='Item name',
+        max_length=20,
+        required=True
+    )
+    urgency_level = forms.CharField(
+        label='Price',
+        max_length=20,
+        required=True
+    )
+    blood_group = forms.CharField(
+        label='Price',
+        max_length=20,
+        required=True
+    )
+    country = forms.CharField(
+        label='Expiry Date',
+        required=True
+    )
+    state = forms.CharField(
+        label='Purchase Date',
+        max_length=20,
+        required=True
+    )
+    city = forms.CharField(
+        label='Description',
+        max_length=20,
+        required=True
+    )
+    area = forms.CharField(
+        label='Description',
+        max_length=20,
+        required=False
+    )
+    title = forms.CharField(
+        label='Description',
+        required=False
+    )
+    content = forms.CharField(
+        label='Description',
+        required=False
+    )

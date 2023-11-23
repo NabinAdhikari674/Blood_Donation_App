@@ -430,3 +430,72 @@ def get_notifications(request):
     
     messages.success(request, f"Successfully retrieved sales items data")
     return JSONResponse({"status":True, "data": notifications, "messages": messages_as_json(request)}, status=200)
+
+def post_create(request):
+    if request.method == "POST":
+        form = form_post(request.POST)
+        if form.is_valid():
+            try:
+                unique_identifier = generate_unique_identifier()
+                if(form.cleaned_data.get('urgency_level') == 'emergency'):
+                    doc_ref = db.collection("post_emergency").document(form.cleaned_data.get('username')+ '_' + unique_identifier)
+                    doc_ref.set({
+                        "username": form.cleaned_data.get('username'),
+                        "create_ts": form.cleaned_data.get('create_ts'),
+                        "urgency_level": form.cleaned_data.get('urgency_level'),
+                        "blood_group": form.cleaned_data.get('blood_group'),
+                        "country": form.cleaned_data.get('country'),
+                        "state": form.cleaned_data.get('state'),
+                        "city": form.cleaned_data.get('city'),
+                        "area": form.cleaned_data.get('area'),
+                        "title": form.cleaned_data.get('title'),
+                        "content": form.cleaned_data.get('content'),
+                    })
+                elif(form.cleaned_data.get('urgency_level') == 'post'):
+                    doc_ref = db.collection("post_regular").document(form.cleaned_data.get('username')+ '_' + unique_identifier)
+                    doc_ref.set({
+                        "username": form.cleaned_data.get('username'),
+                        "create_ts": form.cleaned_data.get('create_ts'),
+                        "urgency_level": form.cleaned_data.get('urgency_level'),
+                        "blood_group": form.cleaned_data.get('blood_group'),
+                        "country": form.cleaned_data.get('country'),
+                        "state": form.cleaned_data.get('state'),
+                        "city": form.cleaned_data.get('city'),
+                        "area": form.cleaned_data.get('area'),
+                        "title": form.cleaned_data.get('title'),
+                        "content": form.cleaned_data.get('content'),
+                    })
+                else:
+                    messages.error(request, f"Invalid input: Urgency Level not properly set!")
+                    return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": str(e)}, status=401)  
+
+                messages.error(request, "Successfully created post")
+                return JSONResponse({"status":True, "messages": messages_as_json(request)}, status=201)   
+            except Exception as e:
+                messages.error(request, "Error while creating post")
+                return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": str(e)}, status=401)   
+        else:
+            form_errors_as_json(form)
+            messages.error(request, f"Invalid input")
+            return JSONResponse({"status":False, "messages": messages_as_json(request), "errors": form_errors_as_json(form)}, status=400)
+    else:
+        messages.error(request, f"Invalid request")
+        return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=405)
+
+def post_get_emergency(request):
+    post_ref = db.collection("post_emergency")
+    docs = post_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    messages.success(request, f"Successfully retrieved all emergency posts")
+    return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
+
+def post_get_regular(request):
+    post_ref = db.collection("post_regular")
+    docs = post_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    messages.success(request, f"Successfully retrieved all regular posts")
+    return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
