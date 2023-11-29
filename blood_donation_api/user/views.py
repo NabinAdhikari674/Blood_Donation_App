@@ -1,5 +1,6 @@
 import json
 import requests
+import math
 from datetime import datetime
 
 from django.contrib import messages
@@ -499,3 +500,35 @@ def post_get_regular(request):
         data[doc.id] = doc.to_dict()
     messages.success(request, f"Successfully retrieved all regular posts")
     return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
+
+def get_alerts(request):
+    username = request.headers.get('username')
+    user_details = user_get_detail(username)
+    today = datetime.strptime(request.headers.get('today'), '%Y-%m-%d %H:%M:%S')
+    post_ref = db.collection("post_emergency")
+    docs = post_ref.stream()
+    data = {}
+    for doc in docs:
+        data[doc.id] = doc.to_dict()
+    alerts = {}
+
+    for item in data:
+        if (user_details['country'] != data[item]['country']) and (user_details['state'] != data[item]['state']):
+            continue
+        create_ts = datetime.strptime(data[item]['create_ts'], '%Y-%m-%d %H:%M:%S')
+        time_difference = (today - create_ts).days
+        if(time_difference < 1):
+            time_difference = math.floor((today - create_ts).seconds / 3600)
+            if(time_difference < 1):
+                time_difference = str(math.floor((today - create_ts).seconds / 60)) + ' minutes'
+            else:
+                time_difference = str(time_difference) + ' hours'
+        else:
+            time_difference = str(time_difference) + ' days'
+        alerts[item] = 'User ' + str(data[item]['username']) + ' has requested blood type ' + str(data[item]['blood_group']) + ' in your area about ' + str(time_difference) + ' ago'
+
+    messages.success(request, f"Successfully retrieved all emergency posts")
+    return JSONResponse({"status":True, "data": alerts, "messages": messages_as_json(request)}, status=200)
+
+
+
