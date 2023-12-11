@@ -20,6 +20,8 @@ from blood_donation_api.utilities import *
 from blood_donation_api.settings import FIREBASE_CONFIG
 
 from firebase_admin import auth, firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
+
 db = firestore.client()
 
 @csrf_exempt
@@ -451,6 +453,7 @@ def post_create(request):
                         "area": form.cleaned_data.get('area'),
                         "title": form.cleaned_data.get('title'),
                         "content": form.cleaned_data.get('content'),
+                        "total_reaction" : 0
                     })
                 elif(form.cleaned_data.get('urgency_level') == 'post'):
                     doc_ref = db.collection("post_regular").document(form.cleaned_data.get('username')+ '_' + unique_identifier)
@@ -465,6 +468,7 @@ def post_create(request):
                         "area": form.cleaned_data.get('area'),
                         "title": form.cleaned_data.get('title'),
                         "content": form.cleaned_data.get('content'),
+                        "total_reaction" : 0
                     })
                 else:
                     messages.error(request, f"Invalid input: Urgency Level not properly set!")
@@ -483,22 +487,79 @@ def post_create(request):
         messages.error(request, f"Invalid request")
         return JSONResponse({"status":False, "messages": messages_as_json(request)}, status=405)
 
+def putreaction(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        post_id = request.POST.get("post_id")
+        reaction = request.POST.get("reaction")
+        level = request.POST.get("urgency_level")
+        doc_ref = db.collection("reaction").document(username + '_%_' + post_id)
+        doc_ref.set({
+            "username": username,
+            "post_id": post_id,
+            "reaction": reaction,
+        })
+        value = -1 if(reaction == 0 or reaction == '0') else 1
+        collection = 'post_emergency' if(level == 'emergency') else 'post_regular'
+        post_ref = db.collection(collection).document(post_id)
+        post_ref.update({"total_reaction": firestore.Increment(value)})
+
+        messages.error(request, "Successfully updated reaction")
+        return JSONResponse({"status": True, "messages": messages_as_json(request)}, status=201)
+    else:
+        messages.error(request, f"Invalid request")
+        return JSONResponse({"status": False, "messages": messages_as_json(request)}, status=405)
+
 def post_get_emergency(request):
+    today = datetime.strptime(request.headers.get('today'), '%Y-%m-%d %H:%M:%S')
+    username = request.headers.get('username')
+
     post_ref = db.collection("post_emergency")
-    docs = post_ref.stream()
+    docs = post_ref.order_by("create_ts", direction=firestore.Query.DESCENDING).stream()
+
+    reaction_ref = db.collection("reaction")
+    reaction_doc = reaction_ref.where(filter=FieldFilter("username", "==", username)).stream()
+
+    reactions = {}
+    for reaction in reaction_doc:
+        reactions[reaction.id] = reaction.to_dict()
+
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
+        data[doc.id]['create_ts'] = get_time_difference_in_words(today, datetime.strptime(data[doc.id]['create_ts'], '%Y-%m-%d %H:%M:%S')) + " ago"
+        if(reactions.get(username + "_%_" + doc.id) != None):
+            data[doc.id]['user_reaction'] = reactions[username + "_%_" + doc.id]['reaction']
+        else:
+            data[doc.id]['user_reaction'] = 0
+   
     messages.success(request, f"Successfully retrieved all emergency posts")
     return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
 
 def post_get_regular(request):
+    today = datetime.strptime(request.headers.get('today'), '%Y-%m-%d %H:%M:%S')
+    username = request.headers.get('username')
+
     post_ref = db.collection("post_regular")
-    docs = post_ref.stream()
+    docs = post_ref.order_by("create_ts", direction=firestore.Query.DESCENDING).stream()
+
+    reaction_ref = db.collection("reaction")
+    reaction_doc = reaction_ref.where(filter=FieldFilter("username", "==", username)).stream()
+
+    reactions = {}
+    for reaction in reaction_doc:
+        reactions[reaction.id] = reaction.to_dict()
+
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
-    messages.success(request, f"Successfully retrieved all regular posts")
+        data[doc.id]['create_ts'] = get_time_difference_in_words(today, datetime.strptime(data[doc.id]['create_ts'], '%Y-%m-%d %H:%M:%S')) + " ago"
+        if(reactions.get(username + "_%_" + doc.id) != None):
+            data[doc.id]['user_reaction'] = reactions[username + "_%_" + doc.id]['reaction']
+        else:
+            data[doc.id]['user_reaction'] = 0
+   
+    messages.success(request, f"Successfully retrieved all emergency posts")
     return JSONResponse({"status":True, "data": data, "messages": messages_as_json(request)}, status=200)
 
 def get_alerts(request):
@@ -506,26 +567,17 @@ def get_alerts(request):
     user_details = user_get_detail(username)
     today = datetime.strptime(request.headers.get('today'), '%Y-%m-%d %H:%M:%S')
     post_ref = db.collection("post_emergency")
-    docs = post_ref.stream()
+    docs = post_ref.order_by("create_ts", direction=firestore.Query.DESCENDING).stream()
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
     alerts = {}
 
     for item in data:
-        if (user_details['country'] != data[item]['country']) and (user_details['state'] != data[item]['state']):
-            continue
-        create_ts = datetime.strptime(data[item]['create_ts'], '%Y-%m-%d %H:%M:%S')
-        time_difference = (today - create_ts).days
-        if(time_difference < 1):
-            time_difference = math.floor((today - create_ts).seconds / 3600)
-            if(time_difference < 1):
-                time_difference = str(math.floor((today - create_ts).seconds / 60)) + ' minutes'
-            else:
-                time_difference = str(time_difference) + ' hours'
-        else:
-            time_difference = str(time_difference) + ' days'
-        alerts[item] = 'User ' + str(data[item]['username']) + ' has requested blood type ' + str(data[item]['blood_group']) + ' in your area about ' + str(time_difference) + ' ago'
+        if (user_details['country'] == data[item]['country']) and (user_details['state'] == data[item]['state']):
+            create_ts = datetime.strptime(data[item]['create_ts'], '%Y-%m-%d %H:%M:%S')
+            time_difference = get_time_difference_in_words(today, create_ts)
+            alerts[item] = 'User ' + str(data[item]['username']) + ' has requested blood type ' + str(data[item]['blood_group']) + ' in your area about ' + str(time_difference) + ' ago'
 
     messages.success(request, f"Successfully retrieved all emergency posts")
     return JSONResponse({"status":True, "data": alerts, "messages": messages_as_json(request)}, status=200)

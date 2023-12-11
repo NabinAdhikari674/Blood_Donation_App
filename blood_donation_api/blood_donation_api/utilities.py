@@ -5,6 +5,7 @@ from collections import defaultdict
 import random
 import string
 from datetime import datetime
+import math
 
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -55,3 +56,15 @@ def generate_unique_identifier(length = 8):
     random.seed(current_time_seed)
     identifier = ''.join(random.choice(characters) for _ in range(length))
     return identifier
+
+def get_time_difference_in_words(today, create_ts):
+    time_difference = (today - create_ts).days
+    if(time_difference < 1):
+        time_difference = math.floor((today - create_ts).seconds / 3600)
+        if(time_difference < 1):
+            time_difference = str(math.floor((today - create_ts).seconds / 60)) + ' minutes'
+        else:
+            time_difference = str(time_difference) + ' hours'
+    else:
+        time_difference = str(time_difference) + ' days'
+    return time_difference

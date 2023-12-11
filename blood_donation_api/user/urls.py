@@ -27,5 +27,7 @@ urlpatterns = [
     path('getaddress/', views.getaddress, name='getaddress'),
     path('putaddress/', views.putaddress, name='putaddress'),
     path('getbloodgroup/', views.getbloodgroup, name='getbloodgroup'),
-    path('putbloodgroup/', views.putbloodgroup, name='putbloodgroup')
+    path('putbloodgroup/', views.putbloodgroup, name='putbloodgroup'),
+    path('putReaction/', views.putreaction, name='putReaction')
+
 ]
