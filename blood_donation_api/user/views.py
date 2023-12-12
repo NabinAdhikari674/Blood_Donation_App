@@ -335,7 +335,7 @@ def item_get_all(request):
 def item_get(request):
     username = request.headers.get('username')
     users_ref = db.collection("items").document(username).collection('items')
-    docs = users_ref.stream()
+    docs = users_ref.order_by("purchase_date", direction=firestore.Query.DESCENDING).stream()
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
@@ -383,7 +383,7 @@ def item_sell(request):
 def item_get_sales(request):
     username = request.headers.get('username')
     users_ref = db.collection("sales").document(username).collection('sales')
-    docs = users_ref.stream()
+    docs = users_ref.order_by("sales_date", direction=firestore.Query.DESCENDING).stream()
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
@@ -394,7 +394,7 @@ def item_get_expiry(request):
     username = request.headers.get('username')
     today = datetime.strptime(request.headers.get('today'), '%Y-%m-%d').date()
     users_ref = db.collection("items").document(username).collection('items')
-    docs = users_ref.stream()
+    docs = users_ref.order_by("expiry_date", direction=firestore.Query.DESCENDING).stream()
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
@@ -413,7 +413,7 @@ def get_notifications(request):
     username = request.headers.get('username')
     today = datetime.strptime(request.headers.get('today'), '%Y-%m-%d').date()
     users_ref = db.collection("items").document(username).collection('items')
-    docs = users_ref.stream()
+    docs = users_ref.order_by("expiry_date", direction=firestore.Query.DESCENDING).stream()
     data = {}
     for doc in docs:
         data[doc.id] = doc.to_dict()
